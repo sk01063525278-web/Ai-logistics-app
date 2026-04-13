@@ -67,7 +67,7 @@ if uploaded_file:
             # 생산(입하)
             with col1:
                 prod_img = st.file_uploader(
-                    f"생산(입하) 완료 사진 업로드 - {display_idx}",
+                    f"생산(입하) 후 제품외관 사진 업로드 - {display_idx}",
                     type=["png", "jpg", "jpeg"],
                     key=f"prod_{display_idx}"
                 )
@@ -77,7 +77,7 @@ if uploaded_file:
             # 검사
             with col2:
                 insp_img = st.file_uploader(
-                    f"검사 완료 사진 업로드 - {display_idx}",
+                    f"검사(수) 완료 전/후 사진 업로드 - {display_idx}",
                     type=["png", "jpg", "jpeg"],
                     key=f"insp_{display_idx}"
                 )
@@ -87,7 +87,7 @@ if uploaded_file:
             # 포장
             with col3:
                 pack_img = st.file_uploader(
-                    f"포장 완료 사진 업로드 - {display_idx}",
+                    f"목/박스포장 완료 사진 업로드 - {display_idx}",
                     type=["png", "jpg", "jpeg"],
                     key=f"pack_{display_idx}"
                 )
