@@ -1,77 +1,117 @@
 import streamlit as st
 import pandas as pd
+from datetime import datetime
 
 st.set_page_config(page_title="대한전선 AI 물류관리", layout="wide")
 
 st.title("📦 AI 기반 대한전선 물류관리 시스템")
-st.markdown("### AI가 재고와 납기 리스크를 자동 분석하는 스마트 물류 에이전트")
+st.markdown("### 재고 + 공정 일정 기반 리스크 분석")
 st.info("🤖 AI가 재고 데이터 기반으로 위험 요소를 분석하고 최적 의사결정을 지원합니다.")
 
 uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx"])
 
-if st.button("🔍 AI 분석 실행"):
-    st.success("AI 분석 완료!")
-
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
 
-    st.subheader("📊 원본 데이터")
+    # 날짜 변환
+    df['생산(입하)'] = pd.to_datetime(df['생산(입하)'])
+    df['검사'] = pd.to_datetime(df['검사'])
+    df['포장'] = pd.to_datetime(df['포장'])
+    df['납기'] = pd.to_datetime(df['납기'])
+
+    # 일정 리스크 계산
+    def schedule_risk(row):
+        days_left = (row['납기'] - row['생산(입하)']).days
+
+        if days_left <= 14:
+            return "🔴 위험/관리필요"
+        elif days_left <= 21:
+            return "🟡 주의/관리필요"
+        else:
+            return "🟢 정상"
+
+    df['일정리스크'] = df.apply(schedule_risk, axis=1)
+
+    st.subheader("📊 데이터 및 분석 결과")
     st.dataframe(df)
 
-    # 분석 함수
-    def analyze(row):
-        stock = row['현재재고']
-        min_stock = row['최소재고']
-        incoming = row['입고예정']
-        outgoing = row['출고예정']
-
-        status = "정상"
-        risk = "정상"
-
-        if stock < min_stock:
-            status = "부족"
-
-        if stock + incoming - outgoing < 0:
-            risk = "납기 위험"
-
-        return pd.Series([status, risk])
-
-    df[['재고상태', '납기리스크']] = df.apply(analyze, axis=1)
-
-    st.subheader("📈 분석 결과")
-    st.dataframe(df)
-
-    # 요약 KPI
-    부족 = (df['재고상태'] == '부족').sum()
-    정상 = (df['재고상태'] == '정상').sum()
-    위험 = (df['납기리스크'] == '납기 위험').sum()
+    # KPI
+    위험 = (df['일정리스크'] == "🔴 위험/관리필요").sum()
+    주의 = (df['일정리스크'] == "🟡 주의/관리필요").sum()
+    정상 = (df['일정리스크'] == "🟢 정상").sum()
 
     col1, col2, col3 = st.columns(3)
+    col1.metric("🔴 위험", 위험)
+    col2.metric("🟡 주의", 주의)
+    col3.metric("🟢 정상", 정상)
 
-    col1.metric("⚠️ 부족 자재", 부족)
-    col2.metric("✅ 정상 자재", 정상)
-    col3.metric("🚨 납기 위험", 위험)
+    # 품목별 상세 + 이미지 업로드
+    st.subheader("📦 품목별 공정 관리 및 사진 등록")
 
-    # 위험 자재 필터
-    st.subheader("⚠️ 위험 자재만 보기")
-    risk_df = df[(df['재고상태'] == '부족') | (df['납기리스크'] == '납기 위험')]
-    st.dataframe(risk_df)
+    for idx, row in df.iterrows():
+        display_idx = idx + 1  # 🔥 1부터 시작
+
+        with st.expander(f"📦 품목 {display_idx} | 리스크: {row['일정리스크']}"):
+
+            st.write("### 📅 공정 일정")
+            st.write(f"생산(입하): {row['생산(입하)']}")
+            st.write(f"검사: {row['검사']}")
+            st.write(f"포장: {row['포장']}")
+            st.write(f"납기: {row['납기']}")
+
+            st.write("### 📸 공정별 사진 업로드")
+
+            col1, col2 = st.columns(2)
+            col3, col4 = st.columns(2)
+
+            # 생산(입하)
+            with col1:
+                prod_img = st.file_uploader(
+                    f"생산(입하) 완료 사진 업로드 - {display_idx}",
+                    type=["png", "jpg", "jpeg"],
+                    key=f"prod_{display_idx}"
+                )
+                if prod_img:
+                    st.image(prod_img, width=200)
+
+            # 검사
+            with col2:
+                insp_img = st.file_uploader(
+                    f"검사 완료 사진 업로드 - {display_idx}",
+                    type=["png", "jpg", "jpeg"],
+                    key=f"insp_{display_idx}"
+                )
+                if insp_img:
+                    st.image(insp_img, width=200)
+
+            # 포장
+            with col3:
+                pack_img = st.file_uploader(
+                    f"포장 완료 사진 업로드 - {display_idx}",
+                    type=["png", "jpg", "jpeg"],
+                    key=f"pack_{display_idx}"
+                )
+                if pack_img:
+                    st.image(pack_img, width=200)
+
+            # 납기
+            with col4:
+                del_img = st.file_uploader(
+                    f"패킹리스트 사진 업로드 - {display_idx}",
+                    type=["png", "jpg", "jpeg"],
+                    key=f"del_{display_idx}"
+                )
+                if del_img:
+                    st.image(del_img, width=200)
 
     # AI 코멘트
-    st.subheader("🤖 AI 분석 코멘트")
+    st.subheader("🤖 AI 종합 분석")
 
-    if 부족 > 0:
-        st.warning("현재 다수 자재가 최소재고 이하 상태입니다.")
     if 위험 > 0:
-        st.error("납기 지연 가능성이 있는 자재가 존재합니다.")
-    if 부족 == 0 and 위험 == 0:
-        st.success("현재 물류 상태는 안정적입니다.")
+        st.error("납기 임박 품목 존재 → 긴급 대응 필요")
+    elif 주의 > 0:
+        st.warning("일정 여유 부족 품목 존재 → 관리 필요")
+    else:
+        st.success("전체 일정 안정 상태")
 
-    st.info("권장 조치: 부족 자재 긴급 발주 및 출고 우선순위 조정 필요")
-
-    # 🔥 이 안으로 넣어야 함 (중요)
-    st.subheader("📌 AI 우선 조치 추천")
-
-    if 부족 > 0:
-        st.write("1. 부족 자재 긴급 발주 필요")
-        st.write("2. 납기 임박 프로젝트 우선 출고")
+    st.info("권장 조치: 생산 일정 조정 또는 우선순위 재배치")
