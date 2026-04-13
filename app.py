@@ -3,9 +3,14 @@ import pandas as pd
 
 st.set_page_config(page_title="대한전선 AI 물류관리", layout="wide")
 
-st.title("📦 대한전선 AI 물류관리 시스템")
+st.title("📦 AI 기반 대한전선 물류관리 시스템")
+st.markdown("### AI가 재고와 납기 리스크를 자동 분석하는 스마트 물류 에이전트")
+st.info("🤖 AI가 재고 데이터 기반으로 위험 요소를 분석하고 최적 의사결정을 지원합니다.")
 
 uploaded_file = st.file_uploader("엑셀 파일 업로드", type=["xlsx"])
+
+if st.button("🔍 AI 분석 실행"):
+    st.success("AI 분석 완료!")
 
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
@@ -52,7 +57,7 @@ if uploaded_file:
     risk_df = df[(df['재고상태'] == '부족') | (df['납기리스크'] == '납기 위험')]
     st.dataframe(risk_df)
 
-    # AI 코멘트 (간단 버전)
+    # AI 코멘트
     st.subheader("🤖 AI 분석 코멘트")
 
     if 부족 > 0:
@@ -63,3 +68,10 @@ if uploaded_file:
         st.success("현재 물류 상태는 안정적입니다.")
 
     st.info("권장 조치: 부족 자재 긴급 발주 및 출고 우선순위 조정 필요")
+
+    # 🔥 이 안으로 넣어야 함 (중요)
+    st.subheader("📌 AI 우선 조치 추천")
+
+    if 부족 > 0:
+        st.write("1. 부족 자재 긴급 발주 필요")
+        st.write("2. 납기 임박 프로젝트 우선 출고")
